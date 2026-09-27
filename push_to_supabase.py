@@ -7,13 +7,16 @@ table Supabase "board_games".
 import glob
 import math
 import os
+import time
 
 import pandas as pd
 import kagglehub
 from supabase import create_client
+from postgrest.exceptions import APIError
 
 DATASET = "sylvainballerini/bgg-data-full"
-BATCH_SIZE = 500
+BATCH_SIZE = 150
+MAX_RETRIES = 4
 
 
 def normalize(key) -> str:
@@ -118,10 +121,32 @@ def push_to_supabase(rows):
     secret_key = os.environ["SUPABASE_SECRET_KEY"]
     supabase = create_client(url, secret_key)
 
-    for i in range(0, len(rows), BATCH_SIZE):
+    total = len(rows)
+    for i in range(0, total, BATCH_SIZE):
         batch = rows[i:i + BATCH_SIZE]
-        supabase.table("board_games").upsert(batch, on_conflict="external_id").execute()
-        print(f"Upsert {min(i + BATCH_SIZE, len(rows))}/{len(rows)}")
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                supabase.table("board_games").upsert(
+                    batch, on_conflict="external_id"
+                ).execute()
+                break
+            except APIError as e:
+                if attempt >= MAX_RETRIES:
+                    print(
+                        f"Échec définitif sur le lot {i}-{i + len(batch)} "
+                        f"après {attempt} tentatives : {e}"
+                    )
+                    raise
+                wait_seconds = attempt * 5
+                print(
+                    f"Erreur sur le lot {i}-{i + len(batch)} "
+                    f"(tentative {attempt}/{MAX_RETRIES}) : {e}. "
+                    f"Nouvelle tentative dans {wait_seconds}s..."
+                )
+                time.sleep(wait_seconds)
+        print(f"Upsert {min(i + BATCH_SIZE, total)}/{total}")
 
 
 def main():
