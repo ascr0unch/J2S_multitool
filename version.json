@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.0.3",
-  "build_number": 4,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.3/J2S_multitool.v1.0.3.apk",
-  "changelog": "Ajout du bouton 'Vérifier les mises à jour' dans À propos.",
+  "latest_version": "1.0.4",
+  "build_number": 5,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.4/J2S_multitool.v1.0.4.apk",
+  "changelog": "Nouveauté : Infos sur les jeux ! Recherche, filtres, favoris, partage et lien BGG pour 180 000 jeux de société.",
   "force_update": false
 }
