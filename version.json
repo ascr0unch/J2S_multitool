@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.0.2",
-  "build_number": 3,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.2/J2S_multitool.v1.0.2.apk",
-  "changelog": "Nouveautés : correction de bugs, amélioration des tables en ligne, mode admin.",
+  "latest_version": "1.0.3",
+  "build_number": 4,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.2/J2S_multitool.v1.0.3.apk",
+  "changelog": "Ajout du bouton 'Vérifier les mises à jour' dans À propos.",
   "force_update": false
 }
