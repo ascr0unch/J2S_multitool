@@ -1,10 +1,11 @@
 """
-Script exécuté automatiquement par GitHub Actions (jamais sur un PC perso).
-Télécharge le dataset Kaggle et upsert les jeux dans la table Supabase
-"board_games".
+Script exécuté automatiquement par GitHub Actions.
+Télécharge le dataset Kaggle bgg-data-full et upsert les jeux dans la
+table Supabase "board_games".
 """
 
 import glob
+import math
 import os
 
 import pandas as pd
@@ -19,10 +20,21 @@ def normalize(key) -> str:
     return "".join(ch for ch in str(key).lower() if ch.isalnum())
 
 
+def clean_value(value):
+    """Remplace NaN / Infinity (non valides en JSON) par None."""
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    return value
+
+
+def clean_record(record: dict) -> dict:
+    return {k: clean_value(v) for k, v in record.items()}
+
+
 def pick(row_norm: dict, keys: list):
     for k in keys:
         v = row_norm.get(k)
-        if v is not None and str(v).strip() not in ("", "nan", "None"):
+        if v is not None and str(v).strip().lower() not in ("", "nan", "none"):
             return v
     return None
 
@@ -41,8 +53,11 @@ def download_records():
     print("Colonnes disponibles :", list(df.columns))
     print(f"Nombre de jeux : {len(df)}")
 
-    df = df.where(pd.notnull(df), None)
-    return df.to_dict(orient="records")
+    records = df.to_dict(orient="records")
+    # Nettoyage fait sur les dicts Python (plus fiable que via pandas,
+    # qui remet parfois NaN à la place de None pour les colonnes numériques).
+    records = [clean_record(r) for r in records]
+    return records
 
 
 def build_rows(records):
@@ -50,15 +65,19 @@ def build_rows(records):
     for record in records:
         norm = {normalize(k): v for k, v in record.items()}
 
-        name = pick(norm, ["name", "title"]) or "Sans nom"
-        external_id = pick(norm, ["id", "bggid"]) or name
+        # Noms réels du dataset bgg-data-full : name_game, id_bgg,
+        # min_player / max_player (singulier), etc. On garde aussi des
+        # variantes plus courantes au cas où le dataset serait mis à jour
+        # avec d'autres noms de colonnes.
+        name = pick(norm, ["namegame", "name", "title"]) or "Sans nom"
+        external_id = pick(norm, ["idbgg", "id", "bggid"]) or name
 
         rows.append({
             "external_id": str(external_id),
             "name": str(name),
             "year_published": pick(norm, ["yearpublished", "year"]),
-            "min_players": pick(norm, ["minplayers"]),
-            "max_players": pick(norm, ["maxplayers"]),
+            "min_players": pick(norm, ["minplayer", "minplayers"]),
+            "max_players": pick(norm, ["maxplayer", "maxplayers"]),
             "min_age": pick(norm, ["minage"]),
             "play_time_minutes": pick(
                 norm, ["playingtime", "avgplaytime", "maxplaytime", "minplaytime"]
