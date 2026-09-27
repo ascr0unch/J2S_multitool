@@ -39,6 +39,27 @@ def pick(row_norm: dict, keys: list):
     return None
 
 
+def to_int(value):
+    """Convertit en int propre : pandas lit souvent 10 comme 10.0 (float)
+    dès qu'une colonne contient des cases vides ailleurs, or les colonnes
+    Postgres "int" refusent les valeurs avec virgule."""
+    if value is None:
+        return None
+    try:
+        return int(round(float(value)))
+    except (TypeError, ValueError):
+        return None
+
+
+def to_float(value):
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def download_records():
     print(f"Téléchargement du dataset {DATASET} ...")
     dataset_path = kagglehub.dataset_download(DATASET)
@@ -75,16 +96,18 @@ def build_rows(records):
         rows.append({
             "external_id": str(external_id),
             "name": str(name),
-            "year_published": pick(norm, ["yearpublished", "year"]),
-            "min_players": pick(norm, ["minplayer", "minplayers"]),
-            "max_players": pick(norm, ["maxplayer", "maxplayers"]),
-            "min_age": pick(norm, ["minage"]),
-            "play_time_minutes": pick(
+            "year_published": to_int(pick(norm, ["yearpublished", "year"])),
+            "min_players": to_int(pick(norm, ["minplayer", "minplayers"])),
+            "max_players": to_int(pick(norm, ["maxplayer", "maxplayers"])),
+            "min_age": to_int(pick(norm, ["minage"])),
+            "play_time_minutes": to_int(pick(
                 norm, ["playingtime", "avgplaytime", "maxplaytime", "minplaytime"]
+            )),
+            "rating": to_float(pick(norm, ["average", "ratingaverage", "avgrating"])),
+            "complexity": to_float(
+                pick(norm, ["averageweight", "complexity", "weight"])
             ),
-            "rating": pick(norm, ["average", "ratingaverage", "avgrating"]),
-            "complexity": pick(norm, ["averageweight", "complexity", "weight"]),
-            "rank": pick(norm, ["rank", "bggrank"]),
+            "rank": to_int(pick(norm, ["rank", "bggrank"])),
             "raw": record,
         })
     return rows
