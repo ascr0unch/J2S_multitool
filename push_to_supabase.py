@@ -44,9 +44,6 @@ def pick(row_norm: dict, keys: list):
 
 
 def to_int(value):
-    """Convertit en int propre : pandas lit souvent 10 comme 10.0 (float)
-    dès qu'une colonne contient des cases vides ailleurs, or les colonnes
-    Postgres "int" refusent les valeurs avec virgule."""
     if value is None:
         return None
     try:
@@ -65,7 +62,6 @@ def to_float(value):
 
 
 def to_id_str(value):
-    """Normalise un identifiant numérique (10 ou 10.0) en '10'."""
     if value is None:
         return None
     try:
@@ -80,7 +76,6 @@ def find_file(dataset_path, filename):
 
 
 def load_lookup(path, id_candidates, name_candidates):
-    """Charge un fichier de référence (ex: category.csv) en dict {id: nom}."""
     if not path:
         return {}
     df = pd.read_csv(path)
@@ -96,8 +91,6 @@ def load_lookup(path, id_candidates, name_candidates):
 
 
 def load_junction(path, game_id_candidates, ref_id_candidates):
-    """Charge un fichier de jointure (ex: b_game_category.csv) en dict
-    {game_id: [ref_id, ref_id, ...]}."""
     if not path:
         return {}
     df = pd.read_csv(path)
@@ -176,7 +169,6 @@ def download_dataset():
 def load_game_records(dataset_path):
     csv_file = find_file(dataset_path, "game.csv")
     if not csv_file:
-        # au cas où le fichier principal n'aurait pas exactement ce nom
         csv_files = glob.glob(os.path.join(dataset_path, "**", "*.csv"), recursive=True)
         csv_file = max(csv_files, key=os.path.getsize)
     print("Fichier jeux utilisé :", csv_file)
@@ -276,12 +268,33 @@ def push_to_supabase(rows):
         print(f"Upsert {min(i + BATCH_SIZE, total)}/{total}")
 
 
+def refresh_distinct_cache(supabase):
+    """Repeuple la table de cache des valeurs distinctes pour les filtres."""
+    print("Rafraîchissement du cache des filtres...")
+    for column in ["categories", "mechanics", "publishers", "families"]:
+        try:
+            supabase.rpc(
+                "refresh_distinct_values",
+                {"p_column": column},
+            ).execute()
+            print(f"  ✓ {column}")
+        except Exception as e:
+            print(f"  ! {column} : {e}")
+
+
 def main():
     dataset_path = download_dataset()
     records = load_game_records(dataset_path)
     related = load_related_data(dataset_path)
     rows = build_rows(records, related)
     push_to_supabase(rows)
+
+    # Rafraîchit le cache des filtres (catégories/mécaniques/éditeurs/familles)
+    url = os.environ["SUPABASE_URL"]
+    secret_key = os.environ["SUPABASE_SECRET_KEY"]
+    supabase = create_client(url, secret_key)
+    refresh_distinct_cache(supabase)
+
     print("Terminé : les jeux (+ catégories/mécaniques/éditeurs/familles) "
           "sont dans la table 'board_games' de Supabase.")
 
