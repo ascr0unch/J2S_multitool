@@ -8,6 +8,7 @@ import glob
 import math
 import os
 import time
+import urllib.parse
 
 import pandas as pd
 import kagglehub
@@ -94,7 +95,25 @@ def build_rows(records):
         # variantes plus courantes au cas où le dataset serait mis à jour
         # avec d'autres noms de colonnes.
         name = pick(norm, ["namegame", "name", "title"]) or "Sans nom"
-        external_id = pick(norm, ["idbgg", "id", "bggid"]) or name
+        bgg_id = pick(norm, ["idbgg", "id", "bggid"])
+        external_id = bgg_id or name
+
+        # Lien direct vers les fichiers du jeu sur BGG (règles multilingues,
+        # souvent en français, déposées par la communauté) : gratuit, fiable,
+        # ne nécessite aucune donnée supplémentaire puisqu'on a déjà id_bgg.
+        rules_url = None
+        if bgg_id:
+            try:
+                rules_url = f"https://boardgamegeek.com/boardgame/{int(float(bgg_id))}/files"
+            except (TypeError, ValueError):
+                rules_url = None
+        # Lien de secours : recherche Google ciblée sur un PDF de règles en
+        # français, utile si BGG n'a pas de fichier de règles en français
+        # pour ce jeu.
+        search_query = urllib.parse.quote(
+            f'"{name}" règles du jeu filetype:pdf français'
+        )
+        rules_search_url = f"https://www.google.com/search?q={search_query}"
 
         rows.append({
             "external_id": str(external_id),
@@ -111,6 +130,8 @@ def build_rows(records):
                 pick(norm, ["averageweight", "complexity", "weight"])
             ),
             "rank": to_int(pick(norm, ["rank", "bggrank"])),
+            "rules_url": rules_url,
+            "rules_search_url": rules_search_url,
             "raw": record,
         })
     return rows
