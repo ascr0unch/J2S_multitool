@@ -1,7 +1,7 @@
 """
 Script exécuté automatiquement par GitHub Actions.
-Télécharge le dataset Kaggle bgg-data-full et upsert les jeux dans la
-table Supabase "board_games".
+Télécharge le dataset Kaggle bgg-data-full (jeux + catégories + mécaniques +
+éditeurs + familles) et upsert le tout dans la table Supabase "board_games".
 """
 
 import glob
@@ -64,56 +64,158 @@ def to_float(value):
         return None
 
 
-def download_records():
-    print(f"Téléchargement du dataset {DATASET} ...")
-    dataset_path = kagglehub.dataset_download(DATASET)
+def to_id_str(value):
+    """Normalise un identifiant numérique (10 ou 10.0) en '10'."""
+    if value is None:
+        return None
+    try:
+        return str(int(float(value)))
+    except (TypeError, ValueError):
+        return None
 
-    csv_files = glob.glob(os.path.join(dataset_path, "**", "*.csv"), recursive=True)
-    if not csv_files:
-        raise FileNotFoundError("Aucun CSV trouvé dans le dataset téléchargé.")
-    csv_file = max(csv_files, key=os.path.getsize)
-    print("Fichier CSV utilisé :", csv_file)
+
+def find_file(dataset_path, filename):
+    matches = glob.glob(os.path.join(dataset_path, "**", filename), recursive=True)
+    return matches[0] if matches else None
+
+
+def load_lookup(path, id_candidates, name_candidates):
+    """Charge un fichier de référence (ex: category.csv) en dict {id: nom}."""
+    if not path:
+        return {}
+    df = pd.read_csv(path)
+    norm_cols = {normalize(c): c for c in df.columns}
+    id_col = next((norm_cols[c] for c in id_candidates if c in norm_cols), None)
+    name_col = next((norm_cols[c] for c in name_candidates if c in norm_cols), None)
+    if not id_col or not name_col:
+        print(f"  ! Colonnes non trouvées dans {path} (colonnes : {list(df.columns)})")
+        return {}
+    df = df[[id_col, name_col]].dropna()
+    ids = df[id_col].apply(to_id_str)
+    return dict(zip(ids, df[name_col].astype(str)))
+
+
+def load_junction(path, game_id_candidates, ref_id_candidates):
+    """Charge un fichier de jointure (ex: b_game_category.csv) en dict
+    {game_id: [ref_id, ref_id, ...]}."""
+    if not path:
+        return {}
+    df = pd.read_csv(path)
+    norm_cols = {normalize(c): c for c in df.columns}
+    game_col = next((norm_cols[c] for c in game_id_candidates if c in norm_cols), None)
+    ref_col = next((norm_cols[c] for c in ref_id_candidates if c in norm_cols), None)
+    if not game_col or not ref_col:
+        print(f"  ! Colonnes non trouvées dans {path} (colonnes : {list(df.columns)})")
+        return {}
+    df = df[[game_col, ref_col]].dropna()
+    df["_gid"] = df[game_col].apply(to_id_str)
+    df["_rid"] = df[ref_col].apply(to_id_str)
+    df = df.dropna(subset=["_gid", "_rid"])
+    return df.groupby("_gid")["_rid"].apply(list).to_dict()
+
+
+def load_related_data(dataset_path):
+    print("Chargement des catégories / mécaniques / éditeurs / familles ...")
+
+    categories = load_lookup(
+        find_file(dataset_path, "category.csv"),
+        ["idcategory", "id"], ["category", "namecategory", "name"],
+    )
+    mechanics = load_lookup(
+        find_file(dataset_path, "mechanic.csv"),
+        ["idmechanic", "id"], ["mechanic", "namemechanic", "name"],
+    )
+    publishers = load_lookup(
+        find_file(dataset_path, "publisher.csv"),
+        ["idpublisher", "id"], ["publisher", "namepublisher", "name"],
+    )
+    families = load_lookup(
+        find_file(dataset_path, "family.csv"),
+        ["idfamily", "id"], ["family", "namefamily", "name"],
+    )
+
+    game_categories = load_junction(
+        find_file(dataset_path, "b_game_category.csv"),
+        ["idbgg", "idgame", "id"], ["idcategory"],
+    )
+    game_mechanics = load_junction(
+        find_file(dataset_path, "b_game_mechanic.csv"),
+        ["idbgg", "idgame", "id"], ["idmechanic"],
+    )
+    game_publishers = load_junction(
+        find_file(dataset_path, "b_game_publisher.csv"),
+        ["idbgg", "idgame", "id"], ["idpublisher"],
+    )
+    game_families = load_junction(
+        find_file(dataset_path, "b_game_family.csv"),
+        ["idbgg", "idgame", "id"], ["idfamily"],
+    )
+
+    print(
+        f"  {len(categories)} catégories, {len(mechanics)} mécaniques, "
+        f"{len(publishers)} éditeurs, {len(families)} familles."
+    )
+
+    return {
+        "categories": categories,
+        "mechanics": mechanics,
+        "publishers": publishers,
+        "families": families,
+        "game_categories": game_categories,
+        "game_mechanics": game_mechanics,
+        "game_publishers": game_publishers,
+        "game_families": game_families,
+    }
+
+
+def download_dataset():
+    print(f"Téléchargement du dataset {DATASET} ...")
+    return kagglehub.dataset_download(DATASET)
+
+
+def load_game_records(dataset_path):
+    csv_file = find_file(dataset_path, "game.csv")
+    if not csv_file:
+        # au cas où le fichier principal n'aurait pas exactement ce nom
+        csv_files = glob.glob(os.path.join(dataset_path, "**", "*.csv"), recursive=True)
+        csv_file = max(csv_files, key=os.path.getsize)
+    print("Fichier jeux utilisé :", csv_file)
 
     df = pd.read_csv(csv_file)
     print("Colonnes disponibles :", list(df.columns))
     print(f"Nombre de jeux : {len(df)}")
 
     records = df.to_dict(orient="records")
-    # Nettoyage fait sur les dicts Python (plus fiable que via pandas,
-    # qui remet parfois NaN à la place de None pour les colonnes numériques).
     records = [clean_record(r) for r in records]
     return records
 
 
-def build_rows(records):
+def build_rows(records, related):
     rows = []
     for record in records:
         norm = {normalize(k): v for k, v in record.items()}
 
-        # Noms réels du dataset bgg-data-full : name_game, id_bgg,
-        # min_player / max_player (singulier), etc. On garde aussi des
-        # variantes plus courantes au cas où le dataset serait mis à jour
-        # avec d'autres noms de colonnes.
         name = pick(norm, ["namegame", "name", "title"]) or "Sans nom"
-        bgg_id = pick(norm, ["idbgg", "id", "bggid"])
-        external_id = bgg_id or name
+        bgg_id_raw = pick(norm, ["idbgg", "id", "bggid"])
+        bgg_id_str = to_id_str(bgg_id_raw)
+        external_id = bgg_id_str or name
 
-        # Lien direct vers les fichiers du jeu sur BGG (règles multilingues,
-        # souvent en français, déposées par la communauté) : gratuit, fiable,
-        # ne nécessite aucune donnée supplémentaire puisqu'on a déjà id_bgg.
-        rules_url = None
-        if bgg_id:
-            try:
-                rules_url = f"https://boardgamegeek.com/boardgame/{int(float(bgg_id))}/files"
-            except (TypeError, ValueError):
-                rules_url = None
-        # Lien de secours : recherche Google ciblée sur un PDF de règles en
-        # français, utile si BGG n'a pas de fichier de règles en français
-        # pour ce jeu.
+        rules_url = (
+            f"https://boardgamegeek.com/boardgame/{bgg_id_str}/files"
+            if bgg_id_str else None
+        )
         search_query = urllib.parse.quote(
             f'"{name}" règles du jeu filetype:pdf français'
         )
         rules_search_url = f"https://www.google.com/search?q={search_query}"
+
+        def resolve(junction_key, lookup_key):
+            if not bgg_id_str:
+                return None
+            ref_ids = related[junction_key].get(bgg_id_str, [])
+            lookup = related[lookup_key]
+            names = [lookup[r] for r in ref_ids if r in lookup]
+            return names or None
 
         rows.append({
             "external_id": str(external_id),
@@ -132,6 +234,10 @@ def build_rows(records):
             "rank": to_int(pick(norm, ["rank", "bggrank"])),
             "rules_url": rules_url,
             "rules_search_url": rules_search_url,
+            "categories": resolve("game_categories", "categories"),
+            "mechanics": resolve("game_mechanics", "mechanics"),
+            "publishers": resolve("game_publishers", "publishers"),
+            "families": resolve("game_families", "families"),
             "raw": record,
         })
     return rows
@@ -171,10 +277,13 @@ def push_to_supabase(rows):
 
 
 def main():
-    records = download_records()
-    rows = build_rows(records)
+    dataset_path = download_dataset()
+    records = load_game_records(dataset_path)
+    related = load_related_data(dataset_path)
+    rows = build_rows(records, related)
     push_to_supabase(rows)
-    print("Terminé : les jeux sont dans la table 'board_games' de Supabase.")
+    print("Terminé : les jeux (+ catégories/mécaniques/éditeurs/familles) "
+          "sont dans la table 'board_games' de Supabase.")
 
 
 if __name__ == "__main__":
