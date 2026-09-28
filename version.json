@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.0.4",
-  "build_number": 5,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.4/J2S_multitool.v1.0.4.apk",
-  "changelog": "Nouveauté : Infos sur les jeux ! Recherche, filtres, favoris, partage et lien BGG pour 180 000 jeux de société.",
+  "latest_version": "1.0.5",
+  "build_number": 6,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.5/J2S_multitool.v1.0.5.apk",
+  "changelog": "🆕 Nouveautés :\n•Favoris complétés \n• Nouvelles infos sur les jeux : catégories, mécaniques, éditeurs et familles\n• Filtres avancés par catégories, mécaniques, éditeurs et familles\n• Filtres réorganisés sur plusieurs lignes\n• Améliorations diverses",
   "force_update": false
 }
