@@ -1,0 +1,23 @@
+#auto wakeup pour supabase et éviter qu'ils le désactive
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Tous les 6 jours à 00h00 UTC
+    - cron: '0 0 */6 * *'
+  workflow_dispatch: # Permet de lancer manuellement
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl -fsS \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/keep_alive?select=id&limit=1"
+          echo "✅ Supabase pinged successfully"
