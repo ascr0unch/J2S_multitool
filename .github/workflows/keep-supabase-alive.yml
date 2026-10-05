@@ -11,13 +11,13 @@ jobs:
   ping-supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase
+      - name: Ping Supabase (J2S)
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          J2S_SUPABASE_URL: ${{ secrets.J2S_SUPABASE_URL }}
+          J2S_SUPABASE_ANON_KEY: ${{ secrets.J2S_SUPABASE_ANON_KEY }}
         run: |
           curl -fsS \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/keep_alive?select=id&limit=1"
-          echo "✅ Supabase pinged successfully"
+            -H "apikey: $J2S_SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $J2S_SUPABASE_ANON_KEY" \
+            "$J2S_SUPABASE_URL/rest/v1/keep_alive?select=id&limit=1"
+          echo "✅ Supabase J2S pinged successfully"
