@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.0.5",
-  "build_number": 6,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.5/J2S_multitool.v1.0.5.apk",
-  "changelog": "🆕 Nouveautés :\n•Favoris complétés \n• Nouvelles infos sur les jeux : catégories, mécaniques, éditeurs et familles\n• Filtres avancés par catégories, mécaniques, éditeurs et familles\n• Filtres réorganisés sur plusieurs lignes\n• Améliorations diverses",
+  "latest_version": "1.0.6",
+  "build_number": 7,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.6/J2S_multitool.v1.0.6.apk",
+  "changelog": "🆕 Nouveautés :\n• Mode 421 complet avec sauvegarde\n• Animation des dés en mode 421\n• Bouton Règles dans le 421\n• Filtres avancés (catégories, mécaniques, éditeurs, familles)\n• Partage avec capture + photos\n• Édition historique enrichie\n• Améliorations diverses",
   "force_update": false
 }
