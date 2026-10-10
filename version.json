@@ -1,7 +1,7 @@
 {
   "latest_version": "1.0.7",
   "build_number": 8,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.7/app-release.apk",
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.0.7/J2S_multitool.v1.0.7.apk",
   "changelog": "- Correction des warnings Dart\n- Modernisation des APIs Flutter\n- Ajout du jeu et de la sauvegarde Yams\n- ...",
   "force_update": false
 }
