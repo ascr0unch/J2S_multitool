@@ -1,7 +1,7 @@
 {
   "latest_version": "1.1.10",
   "build_number": 11,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.10/J2S_multitool.v1.1.10.apk",
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/1.1.10/J2S_multitool.v1.1.10.apk",
   "changelog": "- Ajout de la bibliothèque de jeux\n- Sauvegarde et restauration Google Drive\n- Recherche sans accents et plus rapide\n- Bots 421 et Yams\n- Corrections de bugs divers",
   "force_update": false
 }
