@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.1.11",
-  "build_number": 12,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.11/J2S_multitool.v1.1.11.apk",
-  "changelog": "- Sauvegarde ZIP locale et Google Drive\n- Photos de parties incluses dans les sauvegardes\n- Favoris et bibliothèque conservés après réinstallation\n- Choix de la qualité des photos\n- Corrections de bugs",
+  "latest_version": "1.1.12",
+  "build_number": 13,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.12/J2S_multitool.v1.1.12.apk",
+  "changelog": "• Réglages : nouvelle section Police (Poppins, Merriweather, Barlow Condensed, Nunito)\n• Réglages : taille du texte ajustable de 85% à 130%\n• Fix : filtres joueurs dans la bibliothèque et les favoris\n• Fix : restauration des sauvegardes ne supprime plus les photos existantes\n• Fix : les réglages sont maintenant inclus dans la sauvegarde ZIP\n• Fix : les parties de 421 et Yams sont restaurées au redémarrage\n• Fix 421 : un seul lancer en phase 1 (distribution)\n• Fix 421 : le perdant du tour commence le suivant\n• Fix 421 : plus de popups en double avec les bots",
   "force_update": false
 }
