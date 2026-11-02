@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.1.12",
-  "build_number": 13,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.12/J2S_multitool.v1.1.12.apk",
-  "changelog": "• Réglages : nouvelle section Police (Poppins, Merriweather, Barlow Condensed, Nunito)\n• Réglages : taille du texte ajustable de 85% à 130%\n• Fix : filtres joueurs dans la bibliothèque et les favoris\n• Fix : restauration des sauvegardes ne supprime plus les photos existantes\n• Fix : les réglages sont maintenant inclus dans la sauvegarde ZIP\n• Fix : les parties de 421 et Yams sont restaurées au redémarrage\n• Fix 421 : un seul lancer en phase 1 (distribution)\n• Fix 421 : le perdant du tour commence le suivant\n• Fix 421 : plus de popups en double avec les bots",
+  "latest_version": "1.1.13",
+  "build_number": 14,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.13/J2S_multitool.v1.1.13.apk",
+  "changelog": "• Nouveau menu principal en grille 2 colonnes déplaçable\n• Nouvelle fonctionnalité : Prêt de jeux\n• Ajout d'un bouton 'Rendu' sur les prêts de jeux\n• Amélioration de l'interface : poignées de déplacement sur les tuiles\n• Mode Tableau : ajout de l'objectif de fin de partie (croissant, décroissant, par équipe)\n• Correction de bugs d'affichage sur les grandes tuiles",
   "force_update": false
 }
