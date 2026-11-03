@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.1.13",
-  "build_number": 14,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.13/J2S_multitool.v1.1.13.apk",
-  "changelog": "• Nouveau menu principal en grille 2 colonnes déplaçable\n• Nouvelle fonctionnalité : Prêt de jeux\n• Ajout d'un bouton 'Rendu' sur les prêts de jeux\n• Amélioration de l'interface : poignées de déplacement sur les tuiles\n• Mode Tableau : ajout de l'objectif de fin de partie (croissant, décroissant, par équipe)\n• Correction de bugs d'affichage sur les grandes tuiles",
+  "latest_version": "1.1.14",
+  "build_number": 15,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.14/J2S_multitool.v1.1.14.apk",
+  "changelog": "• Nouveau réglage : Taille du texte de l'accueil (slider dédié)\n• Amélioration de l'interface : poignées de déplacement sur les tuiles",
   "force_update": false
 }
