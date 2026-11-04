@@ -1,7 +1,7 @@
 {
-  "latest_version": "1.1.16",
-  "build_number": 17,
-  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.16/J2S_multitool.v1.1.16.apk",
-  "changelog": "• Yams : rappel des combinaisons, taille des dés et affichage multi-lignes\n• 421 : mode auto, animations accélérées, règles et ordre des joueurs corrigés\n• Popup de fin de partie plus grand et plus lisible",
+  "latest_version": "1.1.17",
+  "build_number": 18,
+  "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.17/J2S_multitool.v1.1.17.apk",
+  "changelog": "• Démarrage : l'app s'ouvre maintenant même sans connexion internet\n• Réseau : favoris et bibliothèque chargés en arrière-plan\n• Fix : mode auto du 421 (3 lancers en phase 2)\n• UI : popup de fin de partie 421 plus grand et lisible",
   "force_update": false
 }
