@@ -1,8 +1,3 @@
-"""
-Script exécuté automatiquement par GitHub Actions.
-Télécharge le dataset Kaggle bgg-data-full (jeux + catégories + mécaniques +
-éditeurs + familles) et upsert le tout dans la table Supabase "board_games".
-"""
 
 import glob
 import math
@@ -20,22 +15,21 @@ BATCH_SIZE = 150
 MAX_RETRIES = 4
 
 
-def normalize(key) -> str:
+def normalize(key):
     return "".join(ch for ch in str(key).lower() if ch.isalnum())
 
 
 def clean_value(value):
-    """Remplace NaN / Infinity (non valides en JSON) par None."""
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return value
 
 
-def clean_record(record: dict) -> dict:
+def clean_record(record):
     return {k: clean_value(v) for k, v in record.items()}
 
 
-def pick(row_norm: dict, keys: list):
+def pick(row_norm, keys):
     for k in keys:
         v = row_norm.get(k)
         if v is not None and str(v).strip().lower() not in ("", "nan", "none"):
@@ -78,50 +72,63 @@ def find_file(dataset_path, filename):
 def load_lookup(path, id_candidates, name_candidates):
     if not path:
         return {}
+
     df = pd.read_csv(path)
     norm_cols = {normalize(c): c for c in df.columns}
+
     id_col = next((norm_cols[c] for c in id_candidates if c in norm_cols), None)
     name_col = next((norm_cols[c] for c in name_candidates if c in norm_cols), None)
+
     if not id_col or not name_col:
-        print(f"  ! Colonnes non trouvées dans {path} (colonnes : {list(df.columns)})")
+        print(f"  ! Colonnes non trouvées dans {path} : {list(df.columns)}")
         return {}
+
     df = df[[id_col, name_col]].dropna()
     ids = df[id_col].apply(to_id_str)
+
     return dict(zip(ids, df[name_col].astype(str)))
 
 
 def load_junction(path, game_id_candidates, ref_id_candidates):
     if not path:
         return {}
+
     df = pd.read_csv(path)
     norm_cols = {normalize(c): c for c in df.columns}
+
     game_col = next((norm_cols[c] for c in game_id_candidates if c in norm_cols), None)
     ref_col = next((norm_cols[c] for c in ref_id_candidates if c in norm_cols), None)
+
     if not game_col or not ref_col:
-        print(f"  ! Colonnes non trouvées dans {path} (colonnes : {list(df.columns)})")
+        print(f"  ! Colonnes non trouvées dans {path} : {list(df.columns)}")
         return {}
+
     df = df[[game_col, ref_col]].dropna()
     df["_gid"] = df[game_col].apply(to_id_str)
     df["_rid"] = df[ref_col].apply(to_id_str)
     df = df.dropna(subset=["_gid", "_rid"])
+
     return df.groupby("_gid")["_rid"].apply(list).to_dict()
 
 
 def load_related_data(dataset_path):
-    print("Chargement des catégories / mécaniques / éditeurs / familles ...")
+    print("Chargement des catégories / mécaniques / éditeurs / familles...")
 
     categories = load_lookup(
         find_file(dataset_path, "category.csv"),
         ["idcategory", "id"], ["category", "namecategory", "name"],
     )
+
     mechanics = load_lookup(
         find_file(dataset_path, "mechanic.csv"),
         ["idmechanic", "id"], ["mechanic", "namemechanic", "name"],
     )
+
     publishers = load_lookup(
         find_file(dataset_path, "publisher.csv"),
         ["idpublisher", "id"], ["publisher", "namepublisher", "name"],
     )
+
     families = load_lookup(
         find_file(dataset_path, "family.csv"),
         ["idfamily", "id"], ["family", "namefamily", "name"],
@@ -131,14 +138,17 @@ def load_related_data(dataset_path):
         find_file(dataset_path, "b_game_category.csv"),
         ["idbgg", "idgame", "id"], ["idcategory"],
     )
+
     game_mechanics = load_junction(
         find_file(dataset_path, "b_game_mechanic.csv"),
         ["idbgg", "idgame", "id"], ["idmechanic"],
     )
+
     game_publishers = load_junction(
         find_file(dataset_path, "b_game_publisher.csv"),
         ["idbgg", "idgame", "id"], ["idpublisher"],
     )
+
     game_families = load_junction(
         find_file(dataset_path, "b_game_family.csv"),
         ["idbgg", "idgame", "id"], ["idfamily"],
@@ -162,28 +172,32 @@ def load_related_data(dataset_path):
 
 
 def download_dataset():
-    print(f"Téléchargement du dataset {DATASET} ...")
+    print(f"Téléchargement du dataset {DATASET}...")
     return kagglehub.dataset_download(DATASET)
 
 
 def load_game_records(dataset_path):
     csv_file = find_file(dataset_path, "game.csv")
+
     if not csv_file:
         csv_files = glob.glob(os.path.join(dataset_path, "**", "*.csv"), recursive=True)
+        if not csv_files:
+            raise FileNotFoundError("Aucun fichier CSV trouvé dans le dataset.")
         csv_file = max(csv_files, key=os.path.getsize)
+
     print("Fichier jeux utilisé :", csv_file)
 
     df = pd.read_csv(csv_file)
+
     print("Colonnes disponibles :", list(df.columns))
     print(f"Nombre de jeux : {len(df)}")
 
-    records = df.to_dict(orient="records")
-    records = [clean_record(r) for r in records]
-    return records
+    return [clean_record(r) for r in df.to_dict(orient="records")]
 
 
 def build_rows(records, related):
     rows = []
+
     for record in records:
         norm = {normalize(k): v for k, v in record.items()}
 
@@ -196,17 +210,27 @@ def build_rows(records, related):
             f"https://boardgamegeek.com/boardgame/{bgg_id_str}/files"
             if bgg_id_str else None
         )
+
         search_query = urllib.parse.quote(
             f'"{name}" règles du jeu filetype:pdf français'
         )
+
         rules_search_url = f"https://www.google.com/search?q={search_query}"
+
+        image_url = pick(norm, [
+            "imageurl", "image", "thumbnail",
+            "thumbnailurl", "imagepath", "img"
+        ])
 
         def resolve(junction_key, lookup_key):
             if not bgg_id_str:
                 return None
+
             ref_ids = related[junction_key].get(bgg_id_str, [])
             lookup = related[lookup_key]
+
             names = [lookup[r] for r in ref_ids if r in lookup]
+
             return names or None
 
         rows.append({
@@ -226,31 +250,37 @@ def build_rows(records, related):
             "rank": to_int(pick(norm, ["rank", "bggrank"])),
             "rules_url": rules_url,
             "rules_search_url": rules_search_url,
+            "image_url": str(image_url).strip() if image_url else None,
             "categories": resolve("game_categories", "categories"),
             "mechanics": resolve("game_mechanics", "mechanics"),
             "publishers": resolve("game_publishers", "publishers"),
             "families": resolve("game_families", "families"),
-            "raw": record,
         })
+
     return rows
 
 
 def push_to_supabase(rows):
     url = os.environ["SUPABASE_URL"]
     secret_key = os.environ["SUPABASE_SECRET_KEY"]
+
     supabase = create_client(url, secret_key)
 
     total = len(rows)
+
     for i in range(0, total, BATCH_SIZE):
         batch = rows[i:i + BATCH_SIZE]
         attempt = 0
+
         while True:
             attempt += 1
+
             try:
                 supabase.table("board_games").upsert(
                     batch, on_conflict="external_id"
                 ).execute()
                 break
+
             except APIError as e:
                 if attempt >= MAX_RETRIES:
                     print(
@@ -258,45 +288,59 @@ def push_to_supabase(rows):
                         f"après {attempt} tentatives : {e}"
                     )
                     raise
+
                 wait_seconds = attempt * 5
+
                 print(
                     f"Erreur sur le lot {i}-{i + len(batch)} "
                     f"(tentative {attempt}/{MAX_RETRIES}) : {e}. "
                     f"Nouvelle tentative dans {wait_seconds}s..."
                 )
+
                 time.sleep(wait_seconds)
+
         print(f"Upsert {min(i + BATCH_SIZE, total)}/{total}")
 
 
 def refresh_distinct_cache(supabase):
-    """Repeuple la table de cache des valeurs distinctes pour les filtres."""
     print("Rafraîchissement du cache des filtres...")
+
     for column in ["categories", "mechanics", "publishers", "families"]:
         try:
             supabase.rpc(
                 "refresh_distinct_values",
                 {"p_column": column},
             ).execute()
+
             print(f"  ✓ {column}")
+
         except Exception as e:
             print(f"  ! {column} : {e}")
 
 
 def main():
     dataset_path = download_dataset()
+
     records = load_game_records(dataset_path)
     related = load_related_data(dataset_path)
+
     rows = build_rows(records, related)
+
+    print(f"Envoi de {len(rows)} jeux vers Supabase (sans données RAW)...")
+
     push_to_supabase(rows)
 
-    # Rafraîchit le cache des filtres (catégories/mécaniques/éditeurs/familles)
     url = os.environ["SUPABASE_URL"]
     secret_key = os.environ["SUPABASE_SECRET_KEY"]
+
     supabase = create_client(url, secret_key)
+
     refresh_distinct_cache(supabase)
 
-    print("Terminé : les jeux (+ catégories/mécaniques/éditeurs/familles) "
-          "sont dans la table 'board_games' de Supabase.")
+    print(
+        "Terminé : les jeux, images, catégories, mécaniques, "
+        "éditeurs et familles sont dans Supabase."
+    )
 
 
 if __name__ == "__main__":
