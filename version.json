@@ -2,6 +2,6 @@
   "latest_version": "1.1.18",
   "build_number": 19,
   "apk_url": "https://github.com/ascr0unch/J2S_multitool/releases/download/v1.1.18/J2S_multitool.v1.1.18.apk",
-  "changelog": "• Démarrage : l'app s'ouvre maintenant même sans connexion internet\n• Réseau : favoris et bibliothèque chargés en arrière-plan\n• Fix : mode auto du 421 (3 lancers en phase 2)\n• UI : popup de fin de partie 421 plus grand et lisible",
+  "changelog": "• correctifs",
   "force_update": false
 }
